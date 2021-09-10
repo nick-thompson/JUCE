@@ -87,6 +87,9 @@ public:
     /** Refreshes the browser. */
     void refresh();
 
+    /** Posts a message to JavaScript by invoking window.__recvNativeMessage if it exists */
+    void postMessage (const juce::String& message);
+
     /** Clear cookies that the OS has stored for the WebComponents of this application */
     static void clearCookies();
 
@@ -125,6 +128,11 @@ public:
         new window yourself or just load the URL into the current window with goToURL().
      */
     virtual void newWindowAttemptingToLoad (const String& newURL)   { ignoreUnused (newURL); }
+
+    /** This callback occurs when a script inside the browser environment invokes
+        a postMessage call via window.webkit.messageHandlers.nativeHandler.postMessage.
+     */
+    virtual void receivedScriptMessage (const String& message) {}
 
     //==============================================================================
     /** @internal */

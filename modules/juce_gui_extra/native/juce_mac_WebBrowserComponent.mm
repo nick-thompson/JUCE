@@ -177,6 +177,7 @@ struct WebViewDelegateClass  : public ObjCClass<NSObject>
         addMethod (@selector (webView:didFinishNavigation:),                              didFinishNavigation,             "v@:@@");
         addMethod (@selector (webView:didFailNavigation:withError:),                      didFailNavigation,               "v@:@@@");
         addMethod (@selector (webView:didFailProvisionalNavigation:withError:),           didFailProvisionalNavigation,    "v@:@@@");
+        addMethod (@selector (userContentController:didReceiveScriptMessage:),            didReceiveScriptMessage,         "v@:@@");
 
        #if WKWEBVIEW_WEBVIEWDIDCLOSE_SUPPORTED
         addMethod (@selector (webViewDidClose:),                                          webViewDidClose,                 "v@:@");
@@ -231,6 +232,12 @@ private:
     static void didFailProvisionalNavigation (id self, SEL, WKWebView*, WKNavigation*, NSError* error)
     {
         displayError (getOwner (self), error);
+    }
+
+    static void didReceiveScriptMessage (id self, SEL, WKUserContentController*, WKScriptMessage* msg)
+    {
+        auto s = nsStringToJuce([msg body]);
+        getOwner (self)->receivedScriptMessage(s);
     }
 
    #if WKWEBVIEW_WEBVIEWDIDCLOSE_SUPPORTED
@@ -337,12 +344,15 @@ public:
 
         [webView setNavigationDelegate: webViewDelegate];
         [webView setUIDelegate:         webViewDelegate];
+        [webView.configuration.userContentController addScriptMessageHandler:webViewDelegate name:@"nativeHandler"];
 
         setView (webView);
     }
 
     ~Pimpl()
     {
+        [webView.configuration.userContentController removeScriptMessageHandlerForName: @"nativeHandler"];
+
         [webView setNavigationDelegate: nil];
         [webView setUIDelegate:         nil];
 
@@ -385,6 +395,12 @@ public:
 
     void stop()         { [webView stopLoading]; }
     void refresh()      { [webView reload]; }
+
+    void postMessage(const juce::String& msg)
+    {
+        auto expr = juce::String("if (typeof window.__recvNativeMessage === 'function') { window.__recvNativeMessage(") + juce::JSON::toString(msg) + "); }";
+        [webView evaluateJavaScript: juceStringToNS (expr) completionHandler: nil];
+    }
 
 private:
     WKWebView* webView = nil;
@@ -738,6 +754,11 @@ void WebBrowserComponent::goForward()
 void WebBrowserComponent::refresh()
 {
     browser->refresh();
+}
+
+void WebBrowserComponent::postMessage(const juce::String& msg)
+{
+    browser->postMessage(msg);
 }
 
 //==============================================================================
