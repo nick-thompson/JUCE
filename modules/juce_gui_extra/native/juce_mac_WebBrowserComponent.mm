@@ -346,7 +346,7 @@ public:
         [webView setUIDelegate:         webViewDelegate];
         [webView.configuration.userContentController addScriptMessageHandler:webViewDelegate name:@"nativeHandler"];
 
-       #if JUCE_DEBUG
+       #ifdef ELEM_ENABLE_DEVTOOLS
         [webView.configuration.preferences setValue:@YES forKey:@"developerExtrasEnabled"];
        #endif
 
