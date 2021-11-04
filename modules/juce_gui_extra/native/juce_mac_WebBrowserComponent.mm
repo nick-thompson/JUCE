@@ -400,10 +400,15 @@ public:
     void stop()         { [webView stopLoading]; }
     void refresh()      { [webView reload]; }
 
-    void postMessage(const juce::String& msg)
+    void evaluate(const juce::String& expr, std::function<void(juce::var)> callback)
     {
-        auto expr = juce::String("if (typeof window.__recvNativeMessage === 'function') { window.__recvNativeMessage(") + juce::JSON::toString(msg) + "); }";
-        [webView evaluateJavaScript: juceStringToNS (expr) completionHandler: nil];
+        [webView evaluateJavaScript: juceStringToNS (expr) completionHandler: [callback](id result, NSError* error) {
+            if (error == nil) {
+                callback(nsObjectToVar(result));
+            } else {
+                callback(nsStringToJuce([error localizedDescription]));
+            }
+        }];
     }
 
 private:
@@ -760,9 +765,9 @@ void WebBrowserComponent::refresh()
     browser->refresh();
 }
 
-void WebBrowserComponent::postMessage(const juce::String& msg)
+void WebBrowserComponent::evaluate (const juce::String& expr, std::function<void(juce::var)> callback)
 {
-    browser->postMessage(msg);
+    browser->evaluate(expr, callback);
 }
 
 //==============================================================================

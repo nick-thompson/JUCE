@@ -87,8 +87,8 @@ public:
     /** Refreshes the browser. */
     void refresh();
 
-    /** Posts a message to JavaScript by invoking window.__recvNativeMessage if it exists */
-    void postMessage (const juce::String& message);
+    /** Evaluates a JavaScript expression in the browser, with a callback */
+    void evaluate (const juce::String& expr, std::function<void(juce::var)>);
 
     /** Clear cookies that the OS has stored for the WebComponents of this application */
     static void clearCookies();
